@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Argon2 哈希计算器</title>
+  <script src="https://cdn.jsdelivr.net/npm/argon2-browser@1.18.0/dist/argon2-bundled.min.js" integrity="sha256-d8ZLlGuvGlEW3FkfS5ll1jaxtFX3Xt0tSlh8t14BaHs=" crossorigin="anonymous"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 1rem;
+    }
+    pre {
+      background: #f0f0f0;
+      padding: 10px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>开发者实用密码学 - Argon2 哈希计算器</h1>
+
+  <label>密码 (password)
+    <input type="text" id="password" required>
+  </label>
+
+  <label>盐值 (salt)
+    <input type="text" id="salt" required>
+  </label>
+
+  <label>时间成本 timeCost (默认 3)
+    <input type="number" id="timeCost" value="3" min="1">
+  </label>
+
+  <label>内存成本 memoryCost (KB，默认 4096)
+    <input type="number" id="memoryCost" value="4096" min="8">
+  </label>
+
+  <label>并行度 parallelism (默认 1)
+    <input type="number" id="parallelism" value="1" min="1">
+  </label>
+
+  <label>输出哈希长度 hashLen (默认 32)
+    <input type="number" id="hashLen" value="32" min="4">
+  </label>
+
+  <label>算法类型 type
+    <select id="type">
+      <option value="0">Argon2d</option>
+      <option value="1" selected>Argon2i</option>
+      <option value="2">Argon2id</option>
+    </select>
+  </label>
+
+  <button onclick="generateHash()">生成哈希</button>
+
+  <h2>输出</h2>
+  <pre id="output">等待输入参数后点击生成。</pre>
+
+  <script>
+    async function generateHash() {
+      const password = document.getElementById('password').value;
+      const salt = document.getElementById('salt').value;
+      const timeCost = parseInt(document.getElementById('timeCost').value);
+      const memoryCost = parseInt(document.getElementById('memoryCost').value);
+      const parallelism = parseInt(document.getElementById('parallelism').value);
+      const hashLen = parseInt(document.getElementById('hashLen').value);
+      const type = parseInt(document.getElementById('type').value); // 0: d, 1: i, 2: id
+
+      const output = document.getElementById('output');
+      output.textContent = '正在计算，请稍候...';
+
+      try {
+        const hash = await argon2.hash({
+          pass: password,
+          salt: salt,
+          time: timeCost,
+          mem: memoryCost,
+          parallelism: parallelism,
+          hashLen: hashLen,
+          type: type,
+          distPath: ''
+        });
+
+        output.textContent = `算法类型: ${['Argon2d', 'Argon2i', 'Argon2id'][type]}\n` +
+                             `Encoded: ${hash.encoded}\n\n` +
+                             `Hash (Hex): ${hash.hashHex}\n\n` +
+                             `Hash (Base64): ${hash.hash}`;
+      } catch (err) {
+        output.textContent = `出错：${err.message}`;
+      }
+    }
+  </script>
+</body>
+</html>

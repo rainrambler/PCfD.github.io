@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diffie-Hellman密钥交换协议演示</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #4fc3f7;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .input-box {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        input {
+            width: 100%;
+            padding: 14px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(255, 255, 255, 0.12);
+            color: white;
+            font-size: 1.1rem;
+            transition: background 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 0 2px #4fc3f7;
+        }
+        
+        .btn {
+            background: linear-gradient(90deg, #2196F3, #21CBF3);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4);
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.6);
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+        }
+        
+        .btn-reset {
+            background: linear-gradient(90deg, #FF9800, #FF5722);
+            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.4);
+        }
+        
+        .btn-reset:hover {
+            box-shadow: 0 6px 20px rgba(255, 152, 0, 0.6);
+        }
+        
+        .btn-container {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .visualization {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;
+            margin: 40px 0;
+        }
+        
+        .participants {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .participant {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            width: 300px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+        
+        .participant:hover {
+            transform: translateY(-5px);
+        }
+        
+        .alice {
+            border-top: 4px solid #FF4081;
+        }
+        
+        .bob {
+            border-top: 4px solid #536DFE;
+        }
+        
+        .participant h3 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .participant .icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .alice .icon {
+            color: #FF4081;
+        }
+        
+        .bob .icon {
+            color: #536DFE;
+        }
+        
+        .key-exchange {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 800px;
+            position: relative;
+        }
+        
+        .arrow {
+            position: absolute;
+            width: 100px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .arrow::before, .arrow::after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 3px;
+            background: inherit;
+            top: -4px;
+        }
+        
+        .arrow::before {
+            right: 0;
+            transform: rotate(45deg);
+        }
+        
+        .arrow::after {
+            right: 0;
+            transform: rotate(-45deg);
+        }
+        
+        .arrow-top {
+            top: 0;
+        }
+        
+        .arrow-bottom {
+            bottom: 0;
+        }
+        
+        .exchange-data {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+            border-radius: 10px;
+            padding: 20px;
+            width: 200px;
+            text-align: center;
+            z-index: 2;
+        }
+        
+        .calculation-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+        }
+        
+        .step {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 4px solid #4fc3f7;
+        }
+        
+        .step h4 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: #4fc3f7;
+        }
+        
+        .formula {
+            font-family: 'Courier New', monospace;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 1.1rem;
+            overflow-x: auto;
+        }
+        
+        .result {
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: #4fc3f7;
+            margin-top: 10px;
+            word-break: break-all;
+        }
+        
+        .shared-key {
+            text-align: center;
+            padding: 25px;
+            background: rgba(76, 175, 80, 0.15);
+            border-radius: 15px;
+            margin-top: 30px;
+            border: 1px solid rgba(76, 175, 80, 0.4);
+        }
+        
+        .shared-key h3 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: #66BB6A;
+        }
+        
+        .key-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px auto;
+            max-width: 600px;
+            word-break: break-all;
+        }
+        
+        .explanation {
+            line-height: 1.7;
+            margin-top: 25px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+        
+        .explanation h3 {
+            color: #FFD54F;
+            margin-bottom: 15px;
+        }
+        
+        .explanation ul {
+            padding-left: 25px;
+        }
+        
+        .explanation li {
+            margin-bottom: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .input-group {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .participants {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .key-exchange {
+                flex-direction: column;
+                gap: 40px;
+            }
+            
+            .arrow {
+                width: 3px;
+                height: 80px;
+            }
+            
+            .arrow::before, .arrow::after {
+                width: 3px;
+                height: 12px;
+                top: auto;
+                left: -4px;
+            }
+            
+            .arrow::before {
+                bottom: 0;
+                transform: rotate(45deg);
+            }
+            
+            .arrow::after {
+                bottom: 0;
+                transform: rotate(-45deg);
+            }
+            
+            .arrow-top {
+                left: 50%;
+                top: 0;
+            }
+            
+            .arrow-bottom {
+                left: 50%;
+                bottom: 0;
+            }
+        }
+        
+        .security-note {
+            background: rgba(244, 67, 54, 0.15);
+            border: 1px solid rgba(244, 67, 54, 0.4);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        
+        .highlight {
+            color: #FFD54F;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-key"></i> Diffie-Hellman密钥交换协议</h1>
+            <p class="subtitle">本演示展示了Alice和Bob如何在公共信道不安全的情况下，通过Diffie-Hellman协议安全地交换密钥。即使攻击者监听到所有交换的信息，也无法计算出共享密钥。</p>
+        </header>
+        
+        <main>
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-sliders-h"></i> 参数设置</h2>
+                <div class="input-group">
+                    <div class="input-box">
+                        <label for="prime-p">素数 p (质数)</label>
+                        <input type="number" id="prime-p" value="23">
+                    </div>
+                    <div class="input-box">
+                        <label for="base-g">底数 g (生成元)</label>
+                        <input type="number" id="base-g" value="5">
+                    </div>
+                    <div class="input-box">
+                        <label for="private-a">Alice的私钥 a</label>
+                        <input type="number" id="private-a" value="6">
+                    </div>
+                    <div class="input-box">
+                        <label for="private-b">Bob的私钥 b</label>
+                        <input type="number" id="private-b" value="15">
+                    </div>
+                </div>
+                
+                <div class="btn-container">
+                    <button class="btn" id="calculate-btn">
+                        <i class="fas fa-calculator"></i> 计算密钥交换
+                    </button>
+                    <button class="btn btn-reset" id="reset-btn">
+                        <i class="fas fa-redo"></i> 重置参数
+                    </button>
+                    <button class="btn" id="random-btn">
+                        <i class="fas fa-dice"></i> 随机参数
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-project-diagram"></i> 密钥交换过程</h2>
+                <div class="visualization">
+                    <div class="participants">
+                        <div class="participant alice">
+                            <div class="icon"><i class="fas fa-female"></i></div>
+                            <h3>Alice</h3>
+                            <div class="private-key">
+                                <p>私钥 a: <span id="a-value">6</span></p>
+                            </div>
+                            <div class="public-key">
+                                <p>公钥 A = g<sup>a</sup> mod p: <span id="A-value">8</span></p>
+                            </div>
+                            <div class="shared-key">
+                                <p>共享密钥 s = B<sup>a</sup> mod p: <span id="s-alice">2</span></p>
+                            </div>
+                        </div>
+                        
+                        <div class="participant bob">
+                            <div class="icon"><i class="fas fa-male"></i></div>
+                            <h3>Bob</h3>
+                            <div class="private-key">
+                                <p>私钥 b: <span id="b-value">15</span></p>
+                            </div>
+                            <div class="public-key">
+                                <p>公钥 B = g<sup>b</sup> mod p: <span id="B-value">19</span></p>
+                            </div>
+                            <div class="shared-key">
+                                <p>共享密钥 s = A<sup>b</sup> mod p: <span id="s-bob">2</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="key-exchange">
+                        <div class="arrow arrow-top"></div>
+                        <div class="exchange-data">
+                            <p>Alice → Bob</p>
+                            <p class="highlight">公钥 A = <span id="exchange-A">8</span></p>
+                        </div>
+                        <div class="arrow arrow-bottom"></div>
+                        <div class="exchange-data">
+                            <p>Bob → Alice</p>
+                            <p class="highlight">公钥 B = <span id="exchange-B">19</span></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="shared-key">
+                    <h3><i class="fas fa-handshake"></i> 共享密钥</h3>
+                    <div class="key-value" id="shared-key-value">2</div>
+                    <p>Alice和Bob各自计算出了相同的共享密钥，而没有直接传输密钥本身。</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-list-ol"></i> 计算步骤</h2>
+                <div class="calculation-steps">
+                    <div class="step">
+                        <h4><i class="fas fa-user-secret"></i> Alice计算公钥</h4>
+                        <div class="formula">A = g<sup>a</sup> mod p</div>
+                        <div class="formula">A = <span id="step-g">5</span><sup><span id="step-a">6</span></sup> mod <span id="step-p1">23</span></div>
+                        <div class="formula">A = 15625 mod 23 = <span class="result" id="step-A">8</span></div>
+                    </div>
+                    
+                    <div class="step">
+                        <h4><i class="fas fa-user-secret"></i> Bob计算公钥</h4>
+                        <div class="formula">B = g<sup>b</sup> mod p</div>
+                        <div class="formula">B = <span id="step-g2">5</span><sup><span id="step-b">15</span></sup> mod <span id="step-p2">23</span></div>
+                        <div class="formula">B = 30517578125 mod 23 = <span class="result" id="step-B">19</span></div>
+                    </div>
+                    
+                    <div class="step">
+                        <h4><i class="fas fa-key"></i> Alice计算共享密钥</h4>
+                        <div class="formula">s = B<sup>a</sup> mod p</div>
+                        <div class="formula">s = <span id="step-B2">19</span><sup><span id="step-a2">6</span></sup> mod <span id="step-p3">23</span></div>
+                        <div class="formula">s = 47045881 mod 23 = <span class="result" id="step-s1">2</span></div>
+                    </div>
+                    
+                    <div class="step">
+                        <h4><i class="fas fa-key"></i> Bob计算共享密钥</h4>
+                        <div class="formula">s = A<sup>b</sup> mod p</div>
+                        <div class="formula">s = <span id="step-A2">8</span><sup><span id="step-b2">15</span></sup> mod <span id="step-p4">23</span></div>
+                        <div class="formula">s = 35184372088832 mod 23 = <span class="result" id="step-s2">2</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card explanation">
+                <h3><i class="fas fa-lightbulb"></i> Diffie-Hellman协议原理</h3>
+                <p>Diffie-Hellman密钥交换协议允许两个从未通信的实体，在公开信道中建立一个共享密钥。即使攻击者监听到所有交换的信息，也无法计算出共享密钥。</p>
+                
+                <h4>关键概念：</h4>
+                <ul>
+                    <li><span class="highlight">离散对数问题</span>：在有限域中，给定g、p和g<sup>a</sup> mod p，计算a在计算上是困难的。</li>
+                    <li><span class="highlight">公开参数</span>：素数p和生成元g是公开的，任何人都可以知道。</li>
+                    <li><span class="highlight">私密参数</span>：a和b是Alice和Bob各自保密的私钥。</li>
+                    <li><span class="highlight">公开交换</span>：Alice发送A = g<sup>a</sup> mod p给Bob，Bob发送B = g<sup>b</sup> mod p给Alice。</li>
+                    <li><span class="highlight">共享密钥</span>：双方分别计算s = B<sup>a</sup> mod p和s = A<sup>b</sup> mod p，得到相同的值。</li>
+                </ul>
+                
+                <div class="security-note">
+                    <h4><i class="fas fa-shield-alt"></i> 安全注意事项</h4>
+                    <p>在实际应用中，p应该是一个非常大的素数（通常2048位或更大），私钥a和b也应该是大随机数，这样才足以抵御现代计算机的破解攻击。</p>
+                    <p>本演示使用小数值参数是为了便于理解和计算，<span class="highlight">不适用于实际安全通信</span>。</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // DOM元素
+        const primePInput = document.getElementById('prime-p');
+        const baseGInput = document.getElementById('base-g');
+        const privateAInput = document.getElementById('private-a');
+        const privateBInput = document.getElementById('private-b');
+        
+        const calculateBtn = document.getElementById('calculate-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const randomBtn = document.getElementById('random-btn');
+        
+        // 结果元素
+        const aValue = document.getElementById('a-value');
+        const bValue = document.getElementById('b-value');
+        const AValue = document.getElementById('A-value');
+        const BValue = document.getElementById('B-value');
+        const sAlice = document.getElementById('s-alice');
+        const sBob = document.getElementById('s-bob');
+        const exchangeA = document.getElementById('exchange-A');
+        const exchangeB = document.getElementById('exchange-B');
+        const sharedKeyValue = document.getElementById('shared-key-value');
+        
+        // 步骤元素
+        const stepG = document.getElementById('step-g');
+        const stepA = document.getElementById('step-a');
+        const stepP1 = document.getElementById('step-p1');
+        const stepAOut = document.getElementById('step-A');
+        const stepG2 = document.getElementById('step-g2');
+        const stepB = document.getElementById('step-b');
+        const stepP2 = document.getElementById('step-p2');
+        const stepBOut = document.getElementById('step-B');
+        const stepB2 = document.getElementById('step-B2');
+        const stepA2 = document.getElementById('step-a2');
+        const stepP3 = document.getElementById('step-p3');
+        const stepS1 = document.getElementById('step-s1');
+        const stepA3 = document.getElementById('step-A2');
+        const stepB3 = document.getElementById('step-b2');
+        const stepP4 = document.getElementById('step-p4');
+        const stepS2 = document.getElementById('step-s2');
+        
+        // 模幂运算函数 (BigInt支持大数)
+        function modExp(base, exponent, modulus) {
+            if (modulus === 1n) return 0n;
+            let result = 1n;
+            base = base % modulus;
+            while (exponent > 0n) {
+                if (exponent % 2n === 1n) {
+                    result = (result * base) % modulus;
+                }
+                exponent = exponent >> 1n;
+                base = (base * base) % modulus;
+            }
+            return result;
+        }
+        
+        // 计算DH密钥
+        function calculateDH() {
+            // 获取输入值
+            const p = BigInt(primePInput.value);
+            const g = BigInt(baseGInput.value);
+            const a = BigInt(privateAInput.value);
+            const b = BigInt(privateBInput.value);
+            
+            // 验证输入
+            if (p <= 0 || g <= 0 || a <= 0 || b <= 0) {
+                alert('所有参数必须是正整数！');
+                return;
+            }
+            
+            // 计算公钥
+            const A = modExp(g, a, p);
+            const B = modExp(g, b, p);
+            
+            // 计算共享密钥
+            const s1 = modExp(B, a, p);
+            const s2 = modExp(A, b, p);
+            
+            // 更新UI
+            aValue.textContent = a.toString();
+            bValue.textContent = b.toString();
+            AValue.textContent = A.toString();
+            BValue.textContent = B.toString();
+            sAlice.textContent = s1.toString();
+            sBob.textContent = s2.toString();
+            exchangeA.textContent = A.toString();
+            exchangeB.textContent = B.toString();
+            sharedKeyValue.textContent = s1.toString();
+            
+            // 更新步骤
+            stepG.textContent = g.toString();
+            stepA.textContent = a.toString();
+            stepP1.textContent = p.toString();
+            stepAOut.textContent = A.toString();
+            
+            stepG2.textContent = g.toString();
+            stepB.textContent = b.toString();
+            stepP2.textContent = p.toString();
+            stepBOut.textContent = B.toString();
+            
+            stepB2.textContent = B.toString();
+            stepA2.textContent = a.toString();
+            stepP3.textContent = p.toString();
+            stepS1.textContent = s1.toString();
+            
+            stepA3.textContent = A.toString();
+            stepB3.textContent = b.toString();
+            stepP4.textContent = p.toString();
+            stepS2.textContent = s2.toString();
+        }
+        
+        // 重置参数
+        function resetParameters() {
+            primePInput.value = "23";
+            baseGInput.value = "5";
+            privateAInput.value = "6";
+            privateBInput.value = "15";
+            calculateDH();
+        }
+        
+        // 生成随机参数
+        function generateRandomParameters() {
+            // 随机选择一个安全的素数（演示使用小素数）
+            const primes = [23, 31, 47, 59, 71, 83, 97, 107];
+            const p = primes[Math.floor(Math.random() * primes.length)];
+            
+            // 随机选择生成元g（通常选择原根）
+            const primitiveRoots = {
+                23: [5, 7, 10, 11, 14, 15, 17, 19, 20, 21],
+                31: [3, 11, 12, 13, 17, 21, 22, 24],
+                47: [5, 10, 11, 13, 15, 19, 20, 22, 23, 26, 29, 30, 31, 33, 35, 38, 39, 40, 41, 43, 44, 45],
+                59: [2, 6, 8, 10, 11, 13, 14, 18, 23, 24, 30, 31, 32, 33, 34, 37, 38, 39, 40, 42, 43, 44, 47, 50, 52, 54, 55, 56],
+                71: [7, 11, 13, 21, 22, 28, 31, 33, 35, 42, 44, 47, 52, 53, 55, 56, 59, 61, 62, 63, 65, 67, 68, 69],
+                83: [2, 5, 6, 8, 13, 14, 15, 18, 19, 20, 22, 24, 32, 34, 35, 39, 42, 43, 45, 46, 47, 50, 52, 53, 54, 55, 56, 57, 58, 60, 62, 66, 67, 71, 72, 73, 74, 75, 76, 79, 80],
+                97: [5, 7, 10, 13, 14, 15, 17, 21, 23, 26, 29, 37, 38, 39, 40, 41, 56, 57, 58, 59, 60, 68, 71, 74, 76, 80, 82, 83, 84, 87, 90, 92],
+                107: [2, 3, 8, 12, 13, 14, 15, 18, 19, 20, 22, 26, 27, 28, 29, 31, 32, 34, 35, 39, 40, 42, 43, 44, 48, 50, 52, 53, 55, 56, 58, 59, 63, 64, 65, 67, 68, 69, 70, 72, 73, 74, 75, 76, 77, 79, 85, 86, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 101, 102, 103, 104, 105]
+            };
+            
+            const roots = primitiveRoots[p];
+            const g = roots[Math.floor(Math.random() * roots.length)];
+            
+            // 随机生成私钥（1到p-2之间）
+            const a = Math.floor(Math.random() * (p - 2)) + 1;
+            const b = Math.floor(Math.random() * (p - 2)) + 1;
+            
+            // 更新输入
+            primePInput.value = p;
+            baseGInput.value = g;
+            privateAInput.value = a;
+            privateBInput.value = b;
+            
+            // 重新计算
+            calculateDH();
+        }
+        
+        // 事件监听
+        calculateBtn.addEventListener('click', calculateDH);
+        resetBtn.addEventListener('click', resetParameters);
+        randomBtn.addEventListener('click', generateRandomParameters);
+        
+        // 初始化
+        window.addEventListener('DOMContentLoaded', resetParameters);
+    </script>
+</body>
+</html>

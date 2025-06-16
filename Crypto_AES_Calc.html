@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AES加密工具（128位/256位）</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root {
+            --primary: #3498db;
+            --primary-dark: #2980b9;
+            --secondary: #2ecc71;
+            --secondary-dark: #27ae60;
+            --tertiary: #9b59b6;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2980, #26d0ce);
+            color: var(--dark);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            animation: fadeIn 0.6s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        header {
+            background: linear-gradient(90deg, var(--dark), #34495e);
+            color: white;
+            padding: 25px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+        }
+        
+        header h1 {
+            font-size: 2.4rem;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        header p {
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+            font-size: 1.1rem;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 30px;
+            padding: 30px;
+        }
+        
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .input-section, .output-section {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--primary);
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-title i {
+            margin-right: 10px;
+            background: var(--primary);
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .input-group {
+            margin-bottom: 22px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+        }
+        
+        label i {
+            margin-right: 8px;
+            color: var(--primary);
+        }
+        
+        textarea, input, select {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1.05rem;
+            transition: all 0.3s;
+        }
+        
+        textarea {
+            min-height: 140px;
+            resize: vertical;
+            font-family: 'Courier New', monospace;
+        }
+        
+        textarea:focus, input:focus, select:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.2);
+        }
+        
+        .info-text {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            margin-top: 8px;
+            padding-left: 24px;
+            line-height: 1.5;
+        }
+        
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px 26px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.05rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn i {
+            margin-right: 8px;
+        }
+        
+        .btn:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 7px 14px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-generate {
+            background-color: var(--tertiary);
+            margin-left: 12px;
+        }
+        
+        .btn-generate:hover {
+            background-color: #8e44ad;
+        }
+        
+        .btn-copy {
+            background-color: var(--secondary);
+            margin-top: 15px;
+            width: 100%;
+        }
+        
+        .btn-copy:hover {
+            background-color: var(--secondary-dark);
+        }
+        
+        .button-group {
+            display: flex;
+            margin-top: 15px;
+        }
+        
+        .result-container {
+            background: linear-gradient(to bottom right, #f8f9fa, #e9ecef);
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 25px;
+            min-height: 240px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 1.1rem;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .result-title {
+            position: absolute;
+            top: -14px;
+            left: 18px;
+            background: white;
+            padding: 0 15px;
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 1.1rem;
+            border-radius: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .algorithm-info {
+            background: linear-gradient(to right, #e3f2fd, #bbdefb);
+            border-left: 5px solid var(--primary);
+            padding: 20px;
+            border-radius: 0 12px 12px 0;
+            margin-top: 30px;
+        }
+        
+        .algorithm-info h3 {
+            margin-bottom: 15px;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+        }
+        
+        .algorithm-info ul {
+            padding-left: 24px;
+        }
+        
+        .algorithm-info li {
+            margin-bottom: 10px;
+            line-height: 1.6;
+            position: relative;
+        }
+        
+        .algorithm-info li:before {
+            content: "•";
+            color: var(--primary);
+            font-weight: bold;
+            position: absolute;
+            left: -18px;
+            top: 0;
+            font-size: 1.3rem;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            background-color: #f1f2f6;
+            color: #7f8c8d;
+            font-size: 0.95rem;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .error-message {
+            color: var(--danger);
+            margin-top: 12px;
+            font-weight: 600;
+            display: none;
+            padding: 12px;
+            background: #fdeded;
+            border-radius: 8px;
+            border-left: 4px solid var(--danger);
+        }
+        
+        .success-message {
+            color: var(--secondary-dark);
+            margin-top: 12px;
+            font-weight: 600;
+            display: none;
+            padding: 12px;
+            background: #edf7ee;
+            border-radius: 8px;
+            border-left: 4px solid var(--secondary);
+        }
+        
+        .mode-selector {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            background: #f5f9ff;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #e1f0ff;
+        }
+        
+        .mode-selector label {
+            margin-right: 15px;
+            margin-bottom: 0;
+            white-space: nowrap;
+        }
+        
+        .param-display {
+            background: #f9f9f9;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            border: 1px dashed #ddd;
+        }
+        
+        .param-display h4 {
+            margin-bottom: 10px;
+            color: #3498db;
+        }
+        
+        .param-row {
+            display: flex;
+            margin-bottom: 8px;
+            font-family: monospace;
+        }
+        
+        .param-label {
+            font-weight: 600;
+            min-width: 160px;
+        }
+        
+        .encrypted-data {
+            margin-top: 15px;
+            line-height: 1.8;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+        
+        .key-visualization {
+            margin-top: 15px;
+            padding: 15px;
+            background: #e8f4fc;
+            border-radius: 8px;
+            border: 1px solid #bde0fe;
+        }
+        
+        .key-visualization h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .key-bytes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        
+        .key-byte {
+            width: 30px;
+            height: 30px;
+            background: #3498db;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        .byte-label {
+            font-size: 0.7rem;
+            text-align: center;
+            margin-top: 2px;
+            color: #7f8c8d;
+        }
+        
+        .key-used {
+            background: #2ecc71;
+        }
+        
+        .key-unused {
+            background: #bdc3c7;
+            opacity: 0.6;
+        }
+        
+        .key-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 600px) {
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .btn-generate {
+                margin-left: 0;
+                margin-top: 12px;
+            }
+            
+            .mode-selector {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .mode-selector label {
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AES 加密工具</h1>
+            <p>支持 AES-128-CBC 和 AES-256-CBC | 使用 SHA-256 密钥派生</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="input-section">
+                <h2 class="section-title"><i>🔑</i> 加密参数</h2>
+                
+                <div class="mode-selector">
+                    <label for="aesMode"><i>🔒</i> 加密模式：</label>
+                    <select id="aesMode">
+                        <option value="128">AES-128-CBC (128位密钥)</option>
+                        <option value="256">AES-256-CBC (256位密钥)</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label for="plaintext"><i>📝</i> 明文：</label>
+                    <textarea id="plaintext" placeholder="输入要加密的文本...">这是一条需要加密的敏感信息，包含个人隐私数据。</textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label for="key"><i>🔑</i> 密钥：</label>
+                    <input type="text" id="key" placeholder="输入任意长度的密钥" value="mySecretPassphrase">
+                    <p class="info-text">密钥将通过 SHA-256 算法派生，并根据模式截取所需长度</p>
+                </div>
+                
+                <div class="input-group">
+                    <label for="iv"><i>🔄</i> 初始化向量（IV）：</label>
+                    <input type="text" id="iv" placeholder="输入16字节的初始化向量" value="uniqueinitvector">
+                    <p class="info-text">CBC模式需要初始化向量，长度必须为16字节</p>
+                </div>
+                
+                <div class="button-group">
+                    <button id="encryptBtn" class="btn"><i>⚡</i> 执行加密</button>
+                    <button id="generateBtn" class="btn btn-generate"><i>🎲</i> 生成随机参数</button>
+                </div>
+                
+                <div id="errorMessage" class="error-message"></div>
+                <div id="successMessage" class="success-message">加密成功！</div>
+                
+                <div class="algorithm-info">
+                    <h3><i>ℹ️</i> 关于密钥派生：</h3>
+                    <ul>
+                        <li>用户输入的密钥通过 <strong>SHA-256</strong> 算法进行哈希处理</li>
+                        <li>生成固定的256位（32字节）哈希值作为派生密钥</li>
+                        <li><strong>AES-128</strong>：使用派生密钥的前16字节</li>
+                        <li><strong>AES-256</strong>：使用完整的32字节派生密钥</li>
+                        <li>这种方法确保密钥长度一致且符合加密要求</li>
+                        <li>即使输入不同，相同密钥总是生成相同派生密钥</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="output-section">
+                <h2 class="section-title"><i>🔓</i> 加密结果</h2>
+                
+                <div class="result-container">
+                    <div class="result-title">加密输出</div>
+                    <div id="encryptedResult">加密结果将显示在这里...</div>
+                </div>
+                
+                <div class="key-visualization">
+                    <h4>密钥派生可视化：</h4>
+                    <div class="key-info">
+                        <div id="keyDerivationInfo">密钥派生信息将显示在这里</div>
+                    </div>
+                    <div class="key-bytes" id="keyBytesContainer">
+                        <!-- 密钥字节可视化将在这里动态生成 -->
+                    </div>
+                </div>
+                
+                <div class="param-display">
+                    <h4>加密参数：</h4>
+                    <div class="param-row">
+                        <span class="param-label">加密模式：</span>
+                        <span id="modeDisplay">AES-128-CBC</span>
+                    </div>
+                    <div class="param-row">
+                        <span class="param-label">实际密钥长度：</span>
+                        <span id="keyLengthDisplay">16 字节</span>
+                    </div>
+                    <div class="param-row">
+                        <span class="param-label">IV 长度：</span>
+                        <span id="ivLengthDisplay">16 字节</span>
+                    </div>
+                    <div class="param-row">
+                        <span class="param-label">派生密钥摘要：</span>
+                        <span id="keyDigest">等待加密...</span>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="ciphertext"><i>📋</i> Base64 编码：</label>
+                    <textarea id="ciphertext" readonly></textarea>
+                    <button id="copyBase64Btn" class="btn btn-copy"><i>📄</i> 复制 Base64 结果</button>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>安全提示：此工具在浏览器中运行，数据不会发送到服务器。但仍需谨慎处理敏感信息。</p>
+            <p>© 2025 开发者实用密码学-AES加密工具 | 基于CryptoJS实现 | 支持SHA-256密钥派生</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const aesMode = document.getElementById('aesMode');
+            const plaintextInput = document.getElementById('plaintext');
+            const keyInput = document.getElementById('key');
+            const ivInput = document.getElementById('iv');
+            const encryptBtn = document.getElementById('encryptBtn');
+            const generateBtn = document.getElementById('generateBtn');
+            const copyBase64Btn = document.getElementById('copyBase64Btn');
+            const encryptedResult = document.getElementById('encryptedResult');
+            const ciphertextOutput = document.getElementById('ciphertext');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            const modeDisplay = document.getElementById('modeDisplay');
+            const keyLengthDisplay = document.getElementById('keyLengthDisplay');
+            const ivLengthDisplay = document.getElementById('ivLengthDisplay');
+            const keyBytesContainer = document.getElementById('keyBytesContainer');
+            const keyDigest = document.getElementById('keyDigest');
+            const keyDerivationInfo = document.getElementById('keyDerivationInfo');
+            
+            // 初始更新模式显示
+            updateModeDisplay();
+            
+            // 监听模式变化
+            aesMode.addEventListener('change', function() {
+                updateModeDisplay();
+                encryptAES();
+            });
+            
+            // 更新模式显示
+            function updateModeDisplay() {
+                const mode = aesMode.value;
+                if (mode === '128') {
+                    modeDisplay.textContent = 'AES-128-CBC';
+                    keyLengthDisplay.textContent = '16 字节';
+                } else {
+                    modeDisplay.textContent = 'AES-256-CBC';
+                    keyLengthDisplay.textContent = '32 字节';
+                }
+                ivLengthDisplay.textContent = '16 字节';
+            }
+            
+            // 加密函数
+            function encryptAES() {
+                const plaintext = plaintextInput.value;
+                const keyStr = keyInput.value;
+                const iv = ivInput.value;
+                const mode = aesMode.value;
+                
+                // 验证输入
+                if (!plaintext) {
+                    showError('请输入要加密的明文');
+                    return;
+                }
+                
+                if (!keyStr) {
+                    showError('请输入密钥');
+                    return;
+                }
+                
+                if (iv.length !== 16) {
+                    showError('初始化向量（IV）长度必须为16个字符（16字节）');
+                    return;
+                }
+                
+                try {
+                    // 使用SHA-256派生密钥
+                    const keyHash = CryptoJS.SHA256(keyStr);
+                    let derivedKey;
+                    
+                    if (mode === '128') {
+                        // 对于AES-128，使用前16字节（128位）
+                        derivedKey = CryptoJS.lib.WordArray.create(keyHash.words.slice(0, 4));
+                    } else {
+                        // 对于AES-256，使用全部32字节（256位）
+                        derivedKey = keyHash;
+                    }
+                    
+                    // 显示密钥派生信息
+                    displayKeyDerivationInfo(keyHash, mode);
+                    
+                    // 使用派生密钥进行AES加密
+                    const encrypted = CryptoJS.AES.encrypt(plaintext, derivedKey, {
+                        iv: CryptoJS.enc.Utf8.parse(iv),
+                        mode: CryptoJS.mode.CBC,
+                        padding: CryptoJS.pad.Pkcs7
+                    });
+                    
+                    // 显示加密结果
+                    encryptedResult.innerHTML = `<div class="encrypted-data">${encrypted.toString()}</div>`;
+                    ciphertextOutput.value = encrypted.toString();
+                    
+                    showSuccess('数据加密成功！');
+                } catch (error) {
+                    showError('加密过程中出错: ' + error.message);
+                }
+            }
+            
+            // 显示密钥派生信息
+            function displayKeyDerivationInfo(keyHash, mode) {
+                const keyHex = keyHash.toString(CryptoJS.enc.Hex);
+                const keyBytes = [];
+                
+                // 将十六进制字符串转换为字节数组
+                for (let i = 0; i < keyHex.length; i += 2) {
+                    keyBytes.push(parseInt(keyHex.substr(i, 2), 16));
+                }
+                
+                // 显示密钥摘要
+                keyDigest.textContent = keyHex.substring(0, 16) + '...';
+                
+                // 更新密钥派生信息
+                keyDerivationInfo.innerHTML = `
+                    <div>原始密钥: "${keyInput.value}"</div>
+                    <div>SHA-256哈希: ${keyHex}</div>
+                    <div>实际使用: ${mode === '128' ? '前16字节' : '全部32字节'}</div>
+                `;
+                
+                // 可视化密钥字节
+                keyBytesContainer.innerHTML = '';
+                for (let i = 0; i < keyBytes.length; i++) {
+                    const byteElement = document.createElement('div');
+                    byteElement.className = `key-byte ${i < (mode === '128' ? 16 : 32) ? 'key-used' : 'key-unused'}`;
+                    byteElement.textContent = keyBytes[i].toString(16).padStart(2, '0').toUpperCase();
+                    
+                    const container = document.createElement('div');
+                    container.className = 'byte-container';
+                    
+                    const label = document.createElement('div');
+                    label.className = 'byte-label';
+                    label.textContent = i < 10 ? `0${i}` : i;
+                    
+                    container.appendChild(byteElement);
+                    container.appendChild(label);
+                    keyBytesContainer.appendChild(container);
+                }
+            }
+            
+            // 生成随机密钥和IV
+            function generateRandomParams() {
+                const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
+                let key = '';
+                let iv = '';
+                
+                // 生成随机密钥（8-24个字符）
+                const keyLength = Math.floor(Math.random() * 17) + 8;
+                for (let i = 0; i < keyLength; i++) {
+                    key += charset.charAt(Math.floor(Math.random() * charset.length));
+                }
+                
+                for (let i = 0; i < 16; i++) {
+                    iv += charset.charAt(Math.floor(Math.random() * charset.length));
+                }
+                
+                keyInput.value = key;
+                ivInput.value = iv;
+                
+                showSuccess(`已生成新的随机密钥（${keyLength}字符）和初始化向量`);
+                encryptAES();
+            }
+            
+            // 复制Base64结果
+            function copyBase64Result() {
+                ciphertextOutput.select();
+                document.execCommand('copy');
+                showSuccess('Base64结果已复制到剪贴板！');
+            }
+            
+            // 显示错误消息
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+                successMessage.style.display = 'none';
+                
+                // 抖动动画
+                errorMessage.animate([
+                    { transform: 'translateX(0)' },
+                    { transform: 'translateX(-10px)' },
+                    { transform: 'translateX(10px)' },
+                    { transform: 'translateX(0)' }
+                ], {
+                    duration: 300
+                });
+            }
+            
+            // 显示成功消息
+            function showSuccess(message) {
+                successMessage.textContent = message;
+                successMessage.style.display = 'block';
+                errorMessage.style.display = 'none';
+                
+                // 3秒后隐藏成功消息
+                setTimeout(() => {
+                    successMessage.style.display = 'none';
+                }, 3000);
+            }
+            
+            // 事件监听
+            encryptBtn.addEventListener('click', encryptAES);
+            generateBtn.addEventListener('click', generateRandomParams);
+            copyBase64Btn.addEventListener('click', copyBase64Result);
+            keyInput.addEventListener('input', encryptAES);
+            ivInput.addEventListener('input', encryptAES);
+            plaintextInput.addEventListener('input', encryptAES);
+            
+            // 初始加密示例
+            setTimeout(encryptAES, 500);
+        });
+    </script>
+</body>
+</html>

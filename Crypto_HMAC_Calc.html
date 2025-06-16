@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HMAC哈希计算器</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background-color: rgba(0, 0, 20, 0.8);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            color: #4facfe;
+            text-shadow: 0 0 10px rgba(79, 172, 254, 0.7);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+        
+        .input-section {
+            background-color: rgba(30, 30, 60, 0.6);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+            color: #4facfe;
+        }
+        
+        .input-group input, .input-group select, .input-group textarea {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            outline: none;
+            resize: vertical;
+        }
+        
+        .input-group textarea {
+            min-height: 100px;
+        }
+        
+        .input-group input::placeholder, .input-group textarea::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .input-group input:focus, .input-group select:focus, .input-group textarea:focus {
+            background-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 2px #4facfe;
+        }
+        
+        .input-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .input-row .input-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        
+        #calculateBtn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        
+        #calculateBtn:hover {
+            background: linear-gradient(135deg, #00f2fe, #4facfe);
+            transform: translateY(-2px);
+        }
+        
+        #calculateBtn:active {
+            transform: translateY(0);
+        }
+        
+        .results-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .result-card {
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.15), rgba(0, 242, 254, 0.15));
+            border-radius: 12px;
+            padding: 20px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .result-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .result-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: #4facfe;
+            display: flex;
+            align-items: center;
+        }
+        
+        .result-title i {
+            margin-right: 10px;
+            font-size: 1.4rem;
+        }
+        
+        .result-value {
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            min-height: 60px;
+        }
+        
+        .key-info {
+            font-size: 0.9rem;
+            margin-top: 5px;
+            color: #00f2fe;
+        }
+        
+        .copy-btn {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            transition: all 0.2s ease;
+        }
+        
+        .copy-btn:hover {
+            background-color: rgba(79, 172, 254, 0.3);
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(46, 204, 113, 0.9);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transform: translateX(200%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .input-row {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+        
+        footer {
+            margin-top: 20px;
+            text-align: center;
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+        
+        .algorithm-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 5px;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+        
+        .algorithm-info span {
+            background: rgba(79, 172, 254, 0.2);
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>HMAC 哈希计算器</h1>
+            <p class="subtitle">输入消息和密钥，选择哈希算法，计算基于密钥的哈希消息认证码</p>
+        </header>
+        
+        <section class="input-section">
+            <div class="input-group">
+                <label for="message">消息内容</label>
+                <textarea id="message" placeholder="在此输入要计算的消息内容..." autofocus></textarea>
+            </div>
+            
+            <div class="input-row">
+                <div class="input-group">
+                    <label for="secretKey">密钥</label>
+                    <input type="text" id="secretKey" placeholder="输入密钥...">
+                </div>
+                
+                <div class="input-group">
+                    <label for="algorithm">哈希算法</label>
+                    <select id="algorithm">
+                        <option value="SHA256">SHA-256</option>
+                        <option value="SHA1">SHA-1</option>
+                        <option value="MD5">MD5</option>
+                        <option value="SHA224">SHA-224</option>
+                        <option value="SHA384">SHA-384</option>
+                        <option value="SHA512">SHA-512</option>
+                        <option value="SHA3">SHA3-256</option>
+                        <option value="SHA3224">SHA3-224</option>
+                        <option value="SHA3384">SHA3-384</option>
+                        <option value="SHA3512">SHA3-512</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button id="calculateBtn">计算 HMAC</button>
+        </section>
+        
+        <section class="results-section">
+            <div class="result-card">
+                <div class="result-title">
+                    <i>🔑</i> 处理后的密钥
+                </div>
+                <div class="result-value" id="processedKey">-</div>
+                <div class="key-info" id="keyInfo">原始密钥经过 SHA-256 哈希并截断</div>
+                <button class="copy-btn" data-target="processedKey">复制</button>
+            </div>
+            
+            <div class="result-card">
+                <div class="result-title">
+                    <i>🔒</i> HMAC 结果
+                </div>
+                <div class="result-value" id="hmacResult">-</div>
+                <div class="algorithm-info">
+                    使用算法: <span id="selectedAlgorithm">SHA-256</span>
+                </div>
+                <button class="copy-btn" data-target="hmacResult">复制</button>
+            </div>
+        </section>
+    </div>
+    
+    <div class="notification" id="notification">已复制到剪贴板！</div>
+    
+    <footer>
+        <p>开发者实用密码学 - HMAC 哈希计算器 &copy; 2025 | 安全消息认证工具</p>
+    </footer>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const messageInput = document.getElementById('message');
+            const secretKeyInput = document.getElementById('secretKey');
+            const algorithmSelect = document.getElementById('algorithm');
+            const calculateBtn = document.getElementById('calculateBtn');
+            const notification = document.getElementById('notification');
+            const processedKeyElement = document.getElementById('processedKey');
+            const hmacResultElement = document.getElementById('hmacResult');
+            const keyInfoElement = document.getElementById('keyInfo');
+            const selectedAlgorithmElement = document.getElementById('selectedAlgorithm');
+            
+            // 为所有复制按钮添加事件监听器
+            document.querySelectorAll('.copy-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const targetId = this.getAttribute('data-target');
+                    const resultElement = document.getElementById(targetId);
+                    
+                    // 复制结果到剪贴板
+                    const textToCopy = resultElement.textContent;
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        // 显示通知
+                        notification.classList.add('show');
+                        setTimeout(() => {
+                            notification.classList.remove('show');
+                        }, 2000);
+                    });
+                });
+            });
+            
+            // 算法选择变化时更新显示
+            algorithmSelect.addEventListener('change', function() {
+                selectedAlgorithmElement.textContent = this.options[this.selectedIndex].text;
+            });
+            
+            // 计算按钮点击事件
+            calculateBtn.addEventListener('click', calculateHMAC);
+            
+            // 初始计算
+            calculateHMAC();
+            
+            function calculateHMAC() {
+                const message = messageInput.value;
+                const secretKey = secretKeyInput.value;
+                const algorithm = algorithmSelect.value;
+                
+                // 获取算法名称用于显示
+                const algorithmName = algorithmSelect.options[algorithmSelect.selectedIndex].text;
+                selectedAlgorithmElement.textContent = algorithmName;
+                
+                // 处理密钥：先进行SHA-256哈希，然后根据算法要求截断
+                const keyHash = CryptoJS.SHA256(secretKey);
+                const keyBytes = keyHash.toString(CryptoJS.enc.Hex);
+                
+                // 根据算法确定需要的密钥长度
+                const keyLengths = {
+                    'MD5': 16,
+                    'SHA1': 20,
+                    'SHA224': 28,
+                    'SHA256': 32,
+                    'SHA384': 48,
+                    'SHA512': 64,
+                    'SHA3': 32,
+                    'SHA3224': 28,
+                    'SHA3384': 48,
+                    'SHA3512': 64
+                };
+                
+                const requiredLength = keyLengths[algorithm] || 32;
+                
+                // 截断密钥到所需长度
+                let processedKeyHex = keyBytes;
+                if (keyBytes.length > requiredLength * 2) {
+                    processedKeyHex = keyBytes.substring(0, requiredLength * 2);
+                } else if (keyBytes.length < requiredLength * 2) {
+                    // 如果密钥太短，用0填充
+                    processedKeyHex = keyBytes + '0'.repeat(requiredLength * 2 - keyBytes.length);
+                }
+                
+                // 转换回WordArray
+                const processedKey = CryptoJS.enc.Hex.parse(processedKeyHex);
+                
+                // 显示处理后的密钥
+                processedKeyElement.textContent = processedKeyHex;
+                keyInfoElement.textContent = `原始密钥经过 SHA-256 哈希并截断为 ${requiredLength} 字节`;
+                
+                // 计算HMAC
+                let hmacResult;
+                switch(algorithm) {
+                    case 'MD5':
+                        hmacResult = CryptoJS.HmacMD5(message, processedKey);
+                        break;
+                    case 'SHA1':
+                        hmacResult = CryptoJS.HmacSHA1(message, processedKey);
+                        break;
+                    case 'SHA224':
+                        hmacResult = CryptoJS.HmacSHA224(message, processedKey);
+                        break;
+                    case 'SHA256':
+                        hmacResult = CryptoJS.HmacSHA256(message, processedKey);
+                        break;
+                    case 'SHA384':
+                        hmacResult = CryptoJS.HmacSHA384(message, processedKey);
+                        break;
+                    case 'SHA512':
+                        hmacResult = CryptoJS.HmacSHA512(message, processedKey);
+                        break;
+                    case 'SHA3':
+                        hmacResult = CryptoJS.HmacSHA3(message, processedKey, { outputLength: 256 });
+                        break;
+                    case 'SHA3224':
+                        hmacResult = CryptoJS.HmacSHA3(message, processedKey, { outputLength: 224 });
+                        break;
+                    case 'SHA3384':
+                        hmacResult = CryptoJS.HmacSHA3(message, processedKey, { outputLength: 384 });
+                        break;
+                    case 'SHA3512':
+                        hmacResult = CryptoJS.HmacSHA3(message, processedKey, { outputLength: 512 });
+                        break;
+                    default:
+                        hmacResult = CryptoJS.HmacSHA256(message, processedKey);
+                }
+                
+                // 显示HMAC结果
+                hmacResultElement.textContent = hmacResult.toString(CryptoJS.enc.Hex);
+            }
+        });
+    </script>
+</body>
+</html>

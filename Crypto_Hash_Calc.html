@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>字符串哈希计算器</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background-color: rgba(0, 0, 20, 0.8);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            color: #4facfe;
+            text-shadow: 0 0 10px rgba(79, 172, 254, 0.7);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+        
+        .input-section {
+            background-color: rgba(30, 30, 60, 0.6);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .input-group {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        
+        #inputString {
+            flex: 1;
+            padding: 15px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 8px 0 0 8px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            outline: none;
+        }
+        
+        #inputString::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        #inputString:focus {
+            background-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 2px #4facfe;
+        }
+        
+        #calculateBtn {
+            padding: 0 30px;
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            border: none;
+            border-radius: 0 8px 8px 0;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        #calculateBtn:hover {
+            background: linear-gradient(135deg, #00f2fe, #4facfe);
+            transform: translateY(-2px);
+        }
+        
+        #calculateBtn:active {
+            transform: translateY(0);
+        }
+        
+        .results-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .result-card {
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.15), rgba(0, 242, 254, 0.15));
+            border-radius: 12px;
+            padding: 20px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .result-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .result-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: #4facfe;
+            display: flex;
+            align-items: center;
+        }
+        
+        .result-title i {
+            margin-right: 10px;
+            font-size: 1.4rem;
+        }
+        
+        .result-value {
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            min-height: 60px;
+        }
+        
+        .length-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-align: center;
+            color: #00f2fe;
+            padding: 10px 0;
+        }
+        
+        .copy-btn {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            transition: all 0.2s ease;
+        }
+        
+        .copy-btn:hover {
+            background-color: rgba(79, 172, 254, 0.3);
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(46, 204, 113, 0.9);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transform: translateX(200%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+            
+            #inputString {
+                border-radius: 8px;
+                margin-bottom: 15px;
+            }
+            
+            #calculateBtn {
+                border-radius: 8px;
+                padding: 15px;
+            }
+        }
+        
+        footer {
+            margin-top: 20px;
+            text-align: center;
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>字符串哈希计算器</h1>
+            <p class="subtitle">输入任意字符串，实时计算其长度和多种哈希值</p>
+        </header>
+        
+        <section class="input-section">
+            <div class="input-group">
+                <input type="text" id="inputString" placeholder="在此输入要计算的字符串..." autofocus>
+                <button id="calculateBtn">计算哈希值</button>
+            </div>
+        </section>
+        
+        <section class="results-section">
+            <div class="result-card">
+                <div class="result-title">
+                    <i>📏</i> 字符串长度
+                </div>
+                <div class="length-value" id="lengthResult">0</div>
+            </div>
+            
+            <div class="result-card">
+                <div class="result-title">
+                    <i>🔒</i> MD5 哈希值
+                </div>
+                <div class="result-value" id="md5Result">-</div>
+                <button class="copy-btn" data-target="md5Result">复制</button>
+            </div>
+            
+            <div class="result-card">
+                <div class="result-title">
+                    <i>🔐</i> SHA-1 哈希值
+                </div>
+                <div class="result-value" id="sha1Result">-</div>
+                <button class="copy-btn" data-target="sha1Result">复制</button>
+            </div>
+            
+            <div class="result-card">
+                <div class="result-title">
+                    <i>🔑</i> SHA-256 哈希值
+                </div>
+                <div class="result-value" id="sha256Result">-</div>
+                <button class="copy-btn" data-target="sha256Result">复制</button>
+            </div>
+            
+            <div class="result-card">
+                <div class="result-title">
+                    <i>🔍</i> SHA3-224 哈希值
+                </div>
+                <div class="result-value" id="sha3_224Result">-</div>
+                <button class="copy-btn" data-target="sha3_224Result">复制</button>
+            </div>
+            
+            <div class="result-card">
+                <div class="result-title">
+                    <i>🔍</i> SHA3-256 哈希值
+                </div>
+                <div class="result-value" id="sha3_256Result">-</div>
+                <button class="copy-btn" data-target="sha3_256Result">复制</button>
+            </div>
+            
+            <div class="result-card">
+                <div class="result-title">
+                    <i>🔍</i> SHA3-384 哈希值
+                </div>
+                <div class="result-value" id="sha3_384Result">-</div>
+                <button class="copy-btn" data-target="sha3_384Result">复制</button>
+            </div>
+            
+            <div class="result-card">
+                <div class="result-title">
+                    <i>🔍</i> SHA3-512 哈希值
+                </div>
+                <div class="result-value" id="sha3_512Result">-</div>
+                <button class="copy-btn" data-target="sha3_512Result">复制</button>
+            </div>
+        </section>
+    </div>
+    
+    <div class="notification" id="notification">已复制到剪贴板！</div>
+    
+    <footer>
+        <p>开发者实用密码学 - 字符串哈希计算器 &copy; 2025 | 安全加密工具</p>
+    </footer>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputString = document.getElementById('inputString');
+            const calculateBtn = document.getElementById('calculateBtn');
+            const notification = document.getElementById('notification');
+            
+            // 为所有复制按钮添加事件监听器
+            document.querySelectorAll('.copy-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const targetId = this.getAttribute('data-target');
+                    const resultElement = document.getElementById(targetId);
+                    
+                    // 复制结果到剪贴板
+                    const textToCopy = resultElement.textContent;
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        // 显示通知
+                        notification.classList.add('show');
+                        setTimeout(() => {
+                            notification.classList.remove('show');
+                        }, 2000);
+                    });
+                });
+            });
+            
+            // 计算按钮点击事件
+            calculateBtn.addEventListener('click', calculateHashes);
+            
+            // 输入框回车事件
+            inputString.addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    calculateHashes();
+                }
+            });
+            
+            // 初始计算
+            calculateHashes();
+            
+            function calculateHashes() {
+                const str = inputString.value;
+                
+                // 计算字符串长度
+                document.getElementById('lengthResult').textContent = str.length;
+                
+                // 计算MD5
+                if (str) {
+                    document.getElementById('md5Result').textContent = CryptoJS.MD5(str).toString();
+                } else {
+                    document.getElementById('md5Result').textContent = '-';
+                }
+                
+                // 计算SHA-1
+                if (str) {
+                    document.getElementById('sha1Result').textContent = CryptoJS.SHA1(str).toString();
+                } else {
+                    document.getElementById('sha1Result').textContent = '-';
+                }
+                
+                // 计算SHA-256
+                if (str) {
+                    document.getElementById('sha256Result').textContent = CryptoJS.SHA256(str).toString();
+                } else {
+                    document.getElementById('sha256Result').textContent = '-';
+                }
+                
+                // 计算SHA3-224
+                if (str) {
+                    document.getElementById('sha3_224Result').textContent = CryptoJS.SHA3(str, { outputLength: 224 }).toString();
+                } else {
+                    document.getElementById('sha3_224Result').textContent = '-';
+                }
+                
+                // 计算SHA3-256
+                if (str) {
+                    document.getElementById('sha3_256Result').textContent = CryptoJS.SHA3(str, { outputLength: 256 }).toString();
+                } else {
+                    document.getElementById('sha3_256Result').textContent = '-';
+                }
+                
+                // 计算SHA3-384
+                if (str) {
+                    document.getElementById('sha3_384Result').textContent = CryptoJS.SHA3(str, { outputLength: 384 }).toString();
+                } else {
+                    document.getElementById('sha3_384Result').textContent = '-';
+                }
+                
+                // 计算SHA3-512
+                if (str) {
+                    document.getElementById('sha3_512Result').textContent = CryptoJS.SHA3(str, { outputLength: 512 }).toString();
+                } else {
+                    document.getElementById('sha3_512Result').textContent = '-';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
